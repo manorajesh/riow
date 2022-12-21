@@ -2,9 +2,9 @@ use std::ops::{Index, AddAssign, MulAssign, Neg, DivAssign, Add, Sub, Mul, Div};
 
 #[derive(Debug, Clone)]
 pub struct vec3 {
-    x: f64,
-    y: f64,
-    z: f64,
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
 }
 
 impl Index<i32> for vec3 {
@@ -77,8 +77,8 @@ impl vec3 {
 }
 
 // Type aliases for vec3
-type point3 = vec3; // 3D point
-type color = vec3;  // RGB color
+pub type point3 = vec3; // 3D point
+pub type color = vec3;  // RGB color
 
 // vec3 Utility Functions
 
