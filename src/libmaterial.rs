@@ -31,18 +31,20 @@ impl lambertian {
 
 pub struct metal {
     albedo: color,
+    roughness: f64, // fuzz
 }
 
 impl metal {
-    pub fn from(albedo: color) -> metal {
+    pub fn from(albedo: color, roughness: f64) -> metal {
         metal {
-            albedo
+            albedo,
+            roughness
         }
     }
 
     pub fn scatter(&self, r_in: &ray, rec: &hit_record, attenuation: &mut color, scattered: &mut ray) -> bool {
         let reflected = reflect(&unit_vector(r_in.direction), &rec.normal);
-        *scattered = ray::from(rec.p, reflected);
+        *scattered = ray::from(rec.p, reflected+self.roughness*random_unit_vector());
         *attenuation = self.albedo;
         dot(scattered.direction, rec.normal) > 0.
     }
