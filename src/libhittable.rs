@@ -49,6 +49,7 @@ impl scatter for Rc<material> {
         match self.as_ref() {
             material::Lambertian(l) => l.scatter(r_in, rec, attenuation, scattered),
             material::Metal(m) => m.scatter(r_in, rec, attenuation, scattered),
+            material::Dielectric(d) => d.scatter(r_in, rec, attenuation, scattered),
         }
     }
 }

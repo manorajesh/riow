@@ -1,5 +1,5 @@
-#[allow(non_camel_case_types)]
-#[allow(non_snake_case)]
+#![allow(non_camel_case_types)]
+#![allow(non_snake_case)]
 mod libvec;
 mod libcolor;
 mod libray;
@@ -17,11 +17,9 @@ use libsphere::sphere;
 use libhittable_list::hittable_list;
 use libcamera::camera;
 use libhittable::scatter;
+use libmaterial::{material, lambertian, metal, dielectric};
 
 use std::{io::{stderr, Write}, rc::Rc};
-use rand::Rng;
-
-use crate::libmaterial::{material, lambertian, metal};
 
 fn ray_color(r: ray, world: &hittable_list, depth: i32) -> color {
     let mut rec = hit_record::new();
@@ -50,10 +48,6 @@ fn ray_color(r: ray, world: &hittable_list, depth: i32) -> color {
     }
 }
 
-fn random_double() -> f64 {
-    rand::thread_rng().gen()
-}
-
 fn main() {
     // Image
     let aspect_ratio = 16./9.;
@@ -66,14 +60,14 @@ fn main() {
     let mut world = hittable_list::new();
 
     let material_ground = Rc::new(material::Lambertian(lambertian::from(color::from(0.8, 0.8, 0.))));
-    let material_center = Rc::new(material::Lambertian(lambertian::from(color::from(0.7, 0.3, 0.3))));
-    let material_left = Rc::new(material::Metal(metal::from(color::from(0.8, 0.8, 0.8), 0.3)));
+    let material_center = Rc::new(material::Dielectric(dielectric::from(1.5)));
+    let material_left = Rc::new(material::Dielectric(dielectric::from(1.5)));
     let material_right = Rc::new(material::Metal(metal::from(color::from(0.8, 0.6, 0.2), 0.)));
     let material_test = Rc::new(material::Metal(metal::from(color::from(0.8, 0.6, 0.2), 0.)));
 
     world.add(hittable::Sphere(sphere::from(point3::from(0., -100.5, -1.), 100., material_ground)));
     world.add(hittable::Sphere(sphere::from(point3::from(0., 0., -1.), 0.5, material_center)));
-    world.add(hittable::Sphere(sphere::from(point3::from(-1., 0., -1.), 0.5, material_left)));
+    world.add(hittable::Sphere(sphere::from(point3::from(-1., 0., -1.), -0.4, material_left)));
     world.add(hittable::Sphere(sphere::from(point3::from(1., 0., -1.), 0.5, material_right)));
     world.add(hittable::Sphere(sphere::from(point3::from(1., 0., 0.), 0.5, material_test)));
 
@@ -88,8 +82,8 @@ fn main() {
         for i in 0..image_width {
             let mut pixel_color = color::new();
             for _ in 0..samples_per_pixel {
-                let u = (i as f64 + random_double())/(image_width-1) as f64;
-                let v = (j as f64 + random_double())/(image_height-1) as f64;
+                let u = (i as f64 + rand::random::<f64>())/(image_width-1) as f64;
+                let v = (j as f64 + rand::random::<f64>())/(image_height-1) as f64;
                 let r = cam.get_ray(u, v);
                 pixel_color += ray_color(r, &world, max_depth);
             }
