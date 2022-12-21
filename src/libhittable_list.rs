@@ -25,9 +25,10 @@ impl hittable_list {
         let mut closest_so_far = t_max;
 
         for object in &self.objects {
+            let mut temp_rec = temp_rec.clone();
             if object.hit(r, t_min, closest_so_far, &mut temp_rec) {
                 hit_anything = true;
-                closest_so_far = temp_rec.t;
+                closest_so_far = temp_rec.clone().t;
                 *rec = temp_rec;
             }
         }

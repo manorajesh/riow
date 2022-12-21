@@ -7,6 +7,7 @@ mod libhittable;
 mod libsphere;
 mod libhittable_list;
 mod libcamera;
+mod libmaterial;
 
 use libhittable::{hittable, hit_record};
 use libvec::*;
@@ -15,9 +16,12 @@ use libray::*;
 use libsphere::sphere;
 use libhittable_list::hittable_list;
 use libcamera::camera;
+use libhittable::scatter;
 
-use std::io::{stderr, Write};
+use std::{io::{stderr, Write}, rc::Rc};
 use rand::Rng;
+
+use crate::libmaterial::{material, lambertian, metal};
 
 fn ray_color(r: ray, world: &hittable_list, depth: i32) -> color {
     let mut rec = hit_record::new();
@@ -27,10 +31,18 @@ fn ray_color(r: ray, world: &hittable_list, depth: i32) -> color {
     }
 
     if world.hit(r, 0.001, f64::INFINITY, &mut rec) {
-        // let target = rec.p + rec.normal + random_in_unit_sphere(); // diffuse scattering
-        // let target = rec.p + rec.normal + random_unit_vector(); // lambertian scattering
-        let target = rec.p + random_in_hemisphere(rec.normal); // hemispherical scattering
-        0.5 * ray_color(ray::from(rec.p, target-rec.p), world, depth-1)
+        let mut scattered = ray::new();
+        let mut attenuation = color::new();
+        if rec.mat.scatter(&r, &rec, &mut attenuation, &mut scattered) {
+            return attenuation * ray_color(scattered, world, depth-1);
+        }
+        return color::new();
+
+
+        // // let target = rec.p + rec.normal + random_in_unit_sphere(); // diffuse scattering
+        // // let target = rec.p + rec.normal + random_unit_vector(); // lambertian scattering
+        // let target = rec.p + random_in_hemisphere(rec.normal); // hemispherical scattering
+        // 0.5 * ray_color(ray::from(rec.p, target-rec.p), world, depth-1)
     } else {
         let unit_direction = unit_vector(r.direction);
         let t = 0.5*(unit_direction.y + 1.);
@@ -52,8 +64,16 @@ fn main() {
 
     // World
     let mut world = hittable_list::new();
-    world.add(hittable::Sphere(sphere::from(point3::from(0., 0., -1.), 0.5)));
-    world.add(hittable::Sphere(sphere::from(point3::from(0., -100.5, -1.), 100.)));
+
+    let material_ground = Rc::new(material::Lambertian(lambertian::from(color::from(0.8, 0.8, 0.))));
+    let material_center = Rc::new(material::Lambertian(lambertian::from(color::from(0.7, 0.3, 0.3))));
+    let material_left = Rc::new(material::Metal(metal::from(color::from(0.8, 0.8, 0.8))));
+    let material_right = Rc::new(material::Metal(metal::from(color::from(0.8, 0.6, 0.2))));
+
+    world.add(hittable::Sphere(sphere::from(point3::from(0., -100.5, -1.), 100., material_ground)));
+    world.add(hittable::Sphere(sphere::from(point3::from(0., 0., -1.), 0.5, material_center)));
+    world.add(hittable::Sphere(sphere::from(point3::from(-1., 0., -1.), 0.5, material_left)));
+    world.add(hittable::Sphere(sphere::from(point3::from(1., 0., -1.), 0.5, material_right)));
 
     // Camera
     let cam = camera::default();

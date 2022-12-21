@@ -93,6 +93,12 @@ impl vec3 {
             rng.gen_range(min..max)
         )
     }
+
+    pub fn near_zero(&self) -> bool {
+        // Return true if the vector is close to zero in all dimensions.
+        let s: f64 = 1e-8;
+        (self.x.abs() < s) && (self.y.abs() < s) && (self.z.abs() < s)
+    }
 }
 
 // Type aliases for vec3
@@ -209,4 +215,8 @@ pub fn random_in_hemisphere(normal: vec3) -> vec3 {
     } else {
         -in_unit_sphere
     }
+}
+
+pub fn reflect(v: &vec3, n: &vec3) -> vec3 {
+    *v - 2. * dot(*v, *n) * *n
 }

@@ -1,15 +1,19 @@
-use crate::{libvec::*, libray::ray, libhittable::hit_record};
+use std::rc::Rc;
+
+use crate::{libvec::*, libray::ray, libhittable::hit_record, libmaterial::material};
 
 pub struct sphere {
     pub center: point3,
-    pub radius: f64
+    pub radius: f64,
+    pub m: Rc<material>,
 }
 
 impl sphere {
-    pub fn from(center: point3, radius: f64) -> sphere {
+    pub fn from(center: point3, radius: f64, m: Rc<material>) -> sphere {
         sphere {
             center,
-            radius
+            radius,
+            m
         }
     }
     pub fn hit(&self, r: ray, t_min: f64, t_max: f64, rec: &mut hit_record) -> bool {
@@ -36,6 +40,7 @@ impl sphere {
                     rec.p = r.at(rec.t);
                     let outward_normal = (rec.p - self.center) / self.radius;
                     rec.set_face_normal(r, outward_normal);
+                    rec.mat = self.m.clone();
     
                     true 
                 }
@@ -44,6 +49,7 @@ impl sphere {
                 rec.p = r.at(rec.t);
                 let outward_normal = (rec.p - self.center) / self.radius;
                 rec.set_face_normal(r, outward_normal);
+                rec.mat = self.m.clone();
 
                 true
             }
