@@ -1,6 +1,6 @@
-use std::ops::{Index, AddAssign, MulAssign, Neg, DivAssign};
+use std::ops::{Index, AddAssign, MulAssign, Neg, DivAssign, Add, Sub, Mul, Div};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct vec3 {
     x: f64,
     y: f64,
@@ -15,7 +15,7 @@ impl Index<i32> for vec3 {
             0 => &self.x,
             1 => &self.y,
             2 => &self.z,
-            _ => panic!("buffer overflow")
+            _ => panic!("buffer overflow: {} > 2", index)
         }
     }
 }
@@ -26,7 +26,7 @@ impl Neg for vec3 {
     fn neg(self) -> Self::Output {
         Self {
             x: -self.x,
-            y: -self.y,
+            y: -self.y,         
             z: -self.z,
         }
     }
@@ -57,6 +57,7 @@ impl DivAssign<f64> for vec3 {
         *self *= 1.0/rhs
     }
 }
+
 impl vec3 {
     pub fn new() -> vec3 {
         vec3 { x: 0.0, y: 0.0, z: 0.0 }
@@ -78,3 +79,96 @@ impl vec3 {
 // Type aliases for vec3
 type point3 = vec3; // 3D point
 type color = vec3;  // RGB color
+
+// vec3 Utility Functions
+
+impl std::fmt::Display for vec3 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {} {}", self[0], self[1], self[2])
+    }
+}
+
+impl Add for vec3 {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        vec3::from(
+            self[0] + rhs[0],
+            self[1] + rhs[1],
+            self[2] + rhs[2]
+        )
+    }
+}
+
+impl Sub for vec3 {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        vec3::from(
+            self[0] - rhs[0],
+            self[1] - rhs[1],
+            self[2] - rhs[2]
+        )
+    }
+}
+
+impl Mul for vec3 {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        vec3::from(
+            self[0] * rhs[0],
+            self[1] * rhs[1],
+            self[2] * rhs[2]
+        )
+    }
+}
+
+impl Mul<f64> for vec3 {
+    type Output = Self;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        vec3::from(
+            self[0] * rhs,
+            self[1] * rhs,
+            self[2] * rhs
+        )
+    }
+}
+
+// communitive
+impl Mul<vec3> for f64 {
+    type Output = vec3;
+
+    fn mul(self, rhs: vec3) -> Self::Output {
+        rhs * self
+    }
+}
+
+impl Div<f64> for vec3 {
+    type Output = vec3;
+
+    fn div(self, rhs: f64) -> Self::Output {
+        (1./rhs) * self
+    }
+}
+
+impl vec3 {
+    pub fn dot(self, other: vec3) -> f64 {
+            self[0] * other[0] +
+            self[1] * other[1] +
+            self[2] * other[2]
+    }
+
+    pub fn cross(self, other: vec3) -> vec3 {
+        vec3::from(
+            self[1] * other[2] - self[2] * other[1],
+            self[2] * other[0] - self[0] * other[2],
+            self[0] * other[1] - self[1] * other[0]
+        )
+    }
+
+    pub fn unit_vector(self) -> vec3 {
+        self.clone() / self.length()
+    }
+}
