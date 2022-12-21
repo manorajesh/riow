@@ -201,3 +201,12 @@ pub fn random_in_unit_sphere() -> vec3 {
 pub fn random_unit_vector() -> vec3 {
     unit_vector(random_in_unit_sphere())
 }
+
+pub fn random_in_hemisphere(normal: vec3) -> vec3 {
+    let in_unit_sphere = random_in_unit_sphere();
+    if dot(in_unit_sphere, normal) > 0.0 { // In the same hemisphere as the normal
+        in_unit_sphere
+    } else {
+        -in_unit_sphere
+    }
+}
