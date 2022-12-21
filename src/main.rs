@@ -27,7 +27,7 @@ fn ray_color(r: ray, world: &hittable_list, depth: i32) -> color {
     }
 
     if world.hit(r, 0.001, f64::INFINITY, &mut rec) {
-        let target = rec.p + rec.normal + random_in_unit_sphere();
+        let target = rec.p + rec.normal + random_unit_vector();
         0.5 * ray_color(ray::from(rec.p, target-rec.p), world, depth-1)
     } else {
         let unit_direction = unit_vector(r.direction);

@@ -197,3 +197,7 @@ pub fn random_in_unit_sphere() -> vec3 {
         return p;
     }
 }
+
+pub fn random_unit_vector() -> vec3 {
+    unit_vector(random_in_unit_sphere())
+}
