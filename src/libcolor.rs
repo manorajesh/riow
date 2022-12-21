@@ -1,4 +1,4 @@
-use crate::vec::color;
+use crate::libvec::color;
 
 pub fn write_color(pixel_color: color) {
     // Write translated [0, 255] value of each color component
