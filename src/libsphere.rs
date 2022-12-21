@@ -12,7 +12,7 @@ impl sphere {
             radius
         }
     }
-    pub fn hit(&self, r: ray, t_min: f64, t_max: f64, mut rec: hit_record) -> bool {
+    pub fn hit(&self, r: ray, t_min: f64, t_max: f64, mut rec: &mut hit_record) -> bool {
         let oc = r.origin - self.center;
         let a = r.direction.length_squared();
         let half_b = dot(oc, r.direction);
@@ -25,9 +25,9 @@ impl sphere {
             let sqrtd = discriminant.sqrt();
 
             // Find the nearest root that lies in the acceptable range
-            let root = (-half_b - sqrtd) / a;
+            let mut root = (-half_b - sqrtd) / a;
             if root < t_min || t_max < root {
-                let root = (-half_b + sqrtd) / a;
+                root = (-half_b + sqrtd) / a;
                 if root < t_min || t_max < root {
                     false
                 } else {

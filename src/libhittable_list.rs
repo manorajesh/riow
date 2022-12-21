@@ -19,16 +19,16 @@ impl hittable_list {
         self.objects.push(object);
     }
 
-    pub fn hit (&self, r: ray, t_min: f64, t_max: f64, mut rec: hit_record) -> bool {
-        let temp_rec = hit_record::new();
+    pub fn hit (&self, r: ray, t_min: f64, t_max: f64, mut rec: &mut hit_record) -> bool {
+        let mut temp_rec = hit_record::new();
         let mut hit_anything = false;
         let mut closest_so_far = t_max;
 
         for object in &self.objects {
-            if object.hit(r, t_min, closest_so_far, temp_rec) {
+            if object.hit(r, t_min, closest_so_far, &mut temp_rec) {
                 hit_anything = true;
                 closest_so_far = temp_rec.t;
-                rec = temp_rec;
+                *rec = temp_rec;
             }
         }
         hit_anything

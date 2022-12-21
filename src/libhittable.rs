@@ -5,7 +5,7 @@ pub enum hittable {
 }
 
 impl hittable {
-    pub fn hit(&self, r: ray, t_min: f64, t_max: f64, rec: hit_record) -> bool {
+    pub fn hit(&self, r: ray, t_min: f64, t_max: f64, rec: &mut hit_record) -> bool {
         match self {
             hittable::Sphere(s) => s.hit(r, t_min, t_max, rec),
         }
