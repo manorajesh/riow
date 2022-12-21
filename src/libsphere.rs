@@ -12,7 +12,7 @@ impl sphere {
             radius
         }
     }
-    pub fn hit(&self, r: ray, t_min: f64, t_max: f64, mut rec: &mut hit_record) -> bool {
+    pub fn hit(&self, r: ray, t_min: f64, t_max: f64, rec: &mut hit_record) -> bool {
         let oc = r.origin - self.center;
         let a = r.direction.length_squared();
         let half_b = dot(oc, r.direction);

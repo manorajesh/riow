@@ -13,9 +13,9 @@ pub fn write_color(pixel_color: color, samples_per_pixel: i32) {
 
     // Divide the color by number of samples and gamma-correct for gamma=2.0
     let scale = 1. / samples_per_pixel as f64;
-    r *= (scale * r).sqrt();
-    g *= (scale * g).sqrt();
-    b *= (scale * b).sqrt();
+    r = (scale * r).sqrt();
+    g = (scale * g).sqrt();
+    b = (scale * b).sqrt();
     
     // Write translated [0, 255] value of each color component
     println!(
