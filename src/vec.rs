@@ -1,6 +1,6 @@
 use std::ops::{Index, AddAssign, MulAssign, Neg, DivAssign, Add, Sub, Mul, Div};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct vec3 {
     pub x: f64,
     pub y: f64,
@@ -153,22 +153,20 @@ impl Div<f64> for vec3 {
     }
 }
 
-impl vec3 {
-    pub fn dot(self, other: vec3) -> f64 {
-            self[0] * other[0] +
-            self[1] * other[1] +
-            self[2] * other[2]
-    }
+pub fn dot(vector: vec3, other: vec3) -> f64 {
+        vector[0] * other[0] +
+        vector[1] * other[1] +
+        vector[2] * other[2]
+}
 
-    pub fn cross(self, other: vec3) -> vec3 {
-        vec3::from(
-            self[1] * other[2] - self[2] * other[1],
-            self[2] * other[0] - self[0] * other[2],
-            self[0] * other[1] - self[1] * other[0]
-        )
-    }
+pub fn cross(vector: vec3, other: vec3) -> vec3 {
+    vec3::from(
+        vector[1] * other[2] - vector[2] * other[1],
+        vector[2] * other[0] - vector[0] * other[2],
+        vector[0] * other[1] - vector[1] * other[0]
+    )
+}
 
-    pub fn unit_vector(self) -> vec3 {
-        self.clone() / self.length()
-    }
+pub fn unit_vector(vector: vec3) -> vec3 {
+    vector.clone() / vector.length()
 }
