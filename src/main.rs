@@ -1,3 +1,6 @@
+mod vec;
+
+use vec::vec3;
 use std::io::{stderr, Write};
 
 fn main() {
