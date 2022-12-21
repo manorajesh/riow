@@ -1,12 +1,18 @@
 use crate::{libvec::*, libray::ray, libhittable::hit_record};
 
-struct sphere {
-    center: point3,
-    radius: f64
+pub struct sphere {
+    pub center: point3,
+    pub radius: f64
 }
 
 impl sphere {
-    fn hit(self, r: ray, t_min: f64, t_max: f64, mut rec: hit_record) -> bool {
+    pub fn from(center: point3, radius: f64) -> sphere {
+        sphere {
+            center,
+            radius
+        }
+    }
+    pub fn hit(&self, r: ray, t_min: f64, t_max: f64, mut rec: hit_record) -> bool {
         let oc = r.origin - self.center;
         let a = r.direction.length_squared();
         let half_b = dot(oc, r.direction);
@@ -25,10 +31,11 @@ impl sphere {
                 if root < t_min || t_max < root {
                     false
                 } else {
-                    // not clean
+                    // not clean code (repeating)
                     rec.t = root;
                     rec.p = r.at(rec.t);
-                    rec.normal = (rec.p - self.center) / self.radius;
+                    let outward_normal = (rec.p - self.center) / self.radius;
+                    rec.set_face_normal(r, outward_normal);
     
                     true 
                 }
