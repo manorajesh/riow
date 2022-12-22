@@ -58,6 +58,10 @@ impl scatter for Rc<material> {
 
 #[macro_export]
 macro_rules! sphere {
+    ($x:expr, $y:expr, $z:expr, $radius:expr, $material:expr) => {
+        hittable::Sphere(sphere::from(point3::from($x, $y, $z), $radius, $material))
+    };
+
     ($center:expr, $radius:expr, $material:expr) => {
         hittable::Sphere(sphere::from($center, $radius, $material))
     };

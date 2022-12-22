@@ -93,21 +93,29 @@ fn reflectance(cosine: f64, ref_idx: f64) -> f64 {
 
 #[macro_export]
 macro_rules! lambertian {
-    ($albedo:expr) => {
-        Rc::new(material::Lambertian(lambertian::from($albedo)))
-    }
+    ($x:expr, $y:expr, $z:expr) => {
+        std::rc::Rc::new(material::Lambertian(lambertian::from(color::from($x, $y, $z))))
+    };
+
+    ($color:expr) => {
+        std::rc::Rc::new(material::Lambertian(lambertian::from($color)))
+    };
 }
 
 #[macro_export]
 macro_rules! metal {
-    ($albedo:expr, $roughness:expr) => {
-        Rc::new(material::Metal(metal::from($albedo, $roughness)))
-    }
+    ($x:expr, $y:expr, $z:expr, $roughness:expr) => {
+        std::rc::Rc::new(material::Metal(metal::from(color::from($x, $y, $z), $roughness)))
+    };
+
+    ($color:expr, $roughness:expr) => {
+        std::rc::Rc::new(material::Metal(metal::from($color, $roughness)))
+    };
 }
 
 #[macro_export]
 macro_rules! dielectric {
     ($ior:expr) => {
-        Rc::new(material::Dielectric(dielectric::from($ior)))
-    }
+        std::rc::Rc::new(material::Dielectric(dielectric::from($ior)))
+    };
 }

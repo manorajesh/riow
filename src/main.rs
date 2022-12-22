@@ -20,7 +20,51 @@ use libcamera::camera;
 use libhittable::scatter;
 use libmaterial::{material, lambertian, metal, dielectric};
 
-use std::{io::{stderr, Write}, rc::Rc};
+use std::io::{stderr, Write};
+
+fn random_scene() -> hittable_list {
+    let mut world = hittable_list::new();
+
+    let ground_material = lambertian!(0.5, 0.5, 0.5);
+    world.add(sphere!(0., -1000., 0., 1000., &ground_material));
+
+    for a in -11..11 {
+        for b in -11..11 {
+            let choose_mat = rand::random::<f64>();
+            let center = point3::from(a as f64 + 0.9*rand::random::<f64>(), 0.2, b as f64 + 0.9*rand::random::<f64>());
+
+            if (center - point3::from(4., 0.2, 0.)).length() > 0.9 {
+                if choose_mat < 0.8 {
+                    // diffuse
+                    let albedo = color::random() * color::random();
+                    let sphere_material = lambertian!(albedo);
+                    world.add(sphere!(center, 0.2, &sphere_material));
+                } else if choose_mat < 0.95 {
+                    // metal
+                    let albedo = color::random_range(0.5, 1.);
+                    let roughness = rand::random::<f64>();
+                    let sphere_material = metal!(albedo, roughness);
+                    world.add(sphere!(center, 0.2, &sphere_material));
+                } else {
+                    // glass
+                    let sphere_material = dielectric!(1.5);
+                    world.add(sphere!(center, 0.2, &sphere_material));
+                }
+            }
+        }
+    }
+
+    let material1 = dielectric!(1.5);
+    world.add(sphere!(point3::from(0., 1., 0.), 1., &material1));
+
+    let material2 = lambertian!(0.4, 0.2, 0.1);
+    world.add(sphere!(point3::from(-4., 1., 0.), 1., &material2));
+
+    let material3 = metal!(color::from(0.7, 0.6, 0.5), 0.);
+    world.add(sphere!(point3::from(4., 1., 0.), 1., &material3));
+
+    world
+}
 
 fn ray_color(r: ray, world: &hittable_list, depth: i32) -> color {
     let mut rec = hit_record::new();
@@ -51,32 +95,21 @@ fn ray_color(r: ray, world: &hittable_list, depth: i32) -> color {
 
 fn main() {
     // Image
-    let aspect_ratio = 16./9.;
-    let image_width: i32 = 400;
+    let aspect_ratio = 3./2.;
+    let image_width: i32 = 1200;
     let image_height: i32 = (image_width as f64/ aspect_ratio) as i32;
-    let samples_per_pixel = 100;
+    let samples_per_pixel = 500;
     let max_depth = 50;
 
     // World
-    let mut world = hittable_list::new();
-
-    let material_ground = lambertian!(color::from(0.8, 0.8, 0.));
-    let material_center = lambertian!(color::from(0.1, 0.2, 0.5));
-    let material_left = dielectric!(1.5);
-    let material_right = metal!(color::from(0.8, 0.6, 0.2), 0.);
-
-    world.add(sphere!(point3::from(0., -100.5, -1.), 100., &material_ground));
-    world.add(sphere!(point3::from(0., 0., -1.), 0.5, &material_center));
-    world.add(sphere!(point3::from(-1., 0., -1.), 0.5, &material_left));
-    world.add(sphere!(point3::from(-1., 0., -1.), -0.45, &material_left));
-    world.add(sphere!(point3::from(1., 0., -1.), 0.5, &material_right));
+    let world = random_scene();
 
     // Camera
-    let lookfrom = point3::from(3., 3., 2.);
-    let lookat = point3::from(0., 0., -1.);
+    let lookfrom = point3::from(13., 2., 3.);
+    let lookat = point3::from(0., 0., 0.);
     let vup = vec3::from(0., 1., 0.);
-    let dist_to_focus = (lookfrom - lookat).length();
-    let aperture = 2.;
+    let dist_to_focus = 10.;
+    let aperture = 0.1;
 
     let cam = camera::from(lookfrom, lookat, vup, 20., aspect_ratio, aperture, dist_to_focus);
 
