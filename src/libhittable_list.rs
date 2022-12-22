@@ -20,7 +20,7 @@ impl hittable_list {
     }
 
     pub fn hit (&self, r: ray, t_min: f64, t_max: f64, rec: &mut hit_record) -> bool {
-        let mut temp_rec = hit_record::new();
+        let temp_rec = hit_record::new();
         let mut hit_anything = false;
         let mut closest_so_far = t_max;
 

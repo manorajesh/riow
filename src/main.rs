@@ -96,9 +96,9 @@ fn ray_color(r: ray, world: &hittable_list, depth: i32) -> color {
 fn main() {
     // Image
     let aspect_ratio = 3./2.;
-    let image_width: i32 = 1200;
+    let image_width: i32 = 400;
     let image_height: i32 = (image_width as f64/ aspect_ratio) as i32;
-    let samples_per_pixel = 500;
+    let samples_per_pixel = 10;
     let max_depth = 50;
 
     // World
@@ -114,6 +114,8 @@ fn main() {
     let cam = camera::from(lookfrom, lookat, vup, 20., aspect_ratio, aperture, dist_to_focus);
 
     // Render
+    let start_time = std::time::SystemTime::now();
+
     print!("P3\n{} {}\n255\n", image_width, image_height);
     for j in (0..image_height).rev() {
         eprint!("\rScanlines remaining: {} ", j);
@@ -129,5 +131,6 @@ fn main() {
             write_color(pixel_color, samples_per_pixel);
         }
     }
-    eprint!("\nDone!\n");
+
+    eprint!("\nDone! - {} seconds\n", start_time.elapsed().unwrap().as_secs());
 }
