@@ -9,11 +9,11 @@ pub struct sphere {
 }
 
 impl sphere {
-    pub fn from(center: point3, radius: f64, m: Rc<material>) -> sphere {
+    pub fn from(center: point3, radius: f64, m: &Rc<material>) -> sphere {
         sphere {
             center,
             radius,
-            m
+            m: m.clone()
         }
     }
     pub fn hit(&self, r: ray, t_min: f64, t_max: f64, rec: &mut hit_record) -> bool {

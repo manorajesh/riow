@@ -231,3 +231,16 @@ pub fn refract(uv: &vec3, n: &vec3, etai_over_etat: f64) -> vec3 {
 pub fn min(a: f64, b: f64) -> f64 {
     if a < b { a } else { b }
 }
+
+pub fn random_in_unit_disk() -> vec3 {
+    loop {
+        let p = vec3::from(
+            rand::thread_rng().gen_range(-1.0..1.0),
+            rand::thread_rng().gen_range(-1.0..1.0),
+            0.
+        );
+
+        if p.length_squared() >= 1. { continue; }
+        return p;
+    }
+}

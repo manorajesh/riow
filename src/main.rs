@@ -60,20 +60,25 @@ fn main() {
     // World
     let mut world = hittable_list::new();
 
-    let material_ground = Rc::new(material::Lambertian(lambertian::from(color::from(0.8, 0.8, 0.))));
-    let material_center = Rc::new(material::Dielectric(dielectric::from(1.5)));
-    let material_left = Rc::new(material::Dielectric(dielectric::from(1.5)));
-    let material_right = Rc::new(material::Metal(metal::from(color::from(0.8, 0.6, 0.2), 0.)));
-    let material_test = Rc::new(material::Metal(metal::from(color::from(0.8, 0.6, 0.2), 0.)));
+    let material_ground = lambertian!(color::from(0.8, 0.8, 0.));
+    let material_center = lambertian!(color::from(0.1, 0.2, 0.5));
+    let material_left = dielectric!(1.5);
+    let material_right = metal!(color::from(0.8, 0.6, 0.2), 0.);
 
-    world.add(hittable::Sphere(sphere::from(point3::from(0., -100.5, -1.), 100., material_ground)));
-    world.add(hittable::Sphere(sphere::from(point3::from(0., 0., -1.), 0.5, material_center)));
-    world.add(hittable::Sphere(sphere::from(point3::from(-1., 0., -1.), -0.4, material_left)));
-    world.add(hittable::Sphere(sphere::from(point3::from(1., 0., -1.), 0.5, material_right)));
-    world.add(hittable::Sphere(sphere::from(point3::from(1., 0., 0.), 0.5, material_test)));
+    world.add(sphere!(point3::from(0., -100.5, -1.), 100., &material_ground));
+    world.add(sphere!(point3::from(0., 0., -1.), 0.5, &material_center));
+    world.add(sphere!(point3::from(-1., 0., -1.), 0.5, &material_left));
+    world.add(sphere!(point3::from(-1., 0., -1.), -0.45, &material_left));
+    world.add(sphere!(point3::from(1., 0., -1.), 0.5, &material_right));
 
     // Camera
-    let cam = camera::default();
+    let lookfrom = point3::from(3., 3., 2.);
+    let lookat = point3::from(0., 0., -1.);
+    let vup = vec3::from(0., 1., 0.);
+    let dist_to_focus = (lookfrom - lookat).length();
+    let aperture = 2.;
+
+    let cam = camera::from(lookfrom, lookat, vup, 20., aspect_ratio, aperture, dist_to_focus);
 
     // Render
     print!("P3\n{} {}\n255\n", image_width, image_height);

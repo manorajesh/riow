@@ -90,3 +90,24 @@ fn reflectance(cosine: f64, ref_idx: f64) -> f64 {
     r0 = r0*r0;
     r0 + (1.-r0)*((1.-cosine).powi(5))
 }
+
+#[macro_export]
+macro_rules! lambertian {
+    ($albedo:expr) => {
+        Rc::new(material::Lambertian(lambertian::from($albedo)))
+    }
+}
+
+#[macro_export]
+macro_rules! metal {
+    ($albedo:expr, $roughness:expr) => {
+        Rc::new(material::Metal(metal::from($albedo, $roughness)))
+    }
+}
+
+#[macro_export]
+macro_rules! dielectric {
+    ($ior:expr) => {
+        Rc::new(material::Dielectric(dielectric::from($ior)))
+    }
+}

@@ -1,3 +1,5 @@
+
+
 use std::rc::Rc;
 
 use crate::{libvec::{point3, vec3, dot, color}, libray::ray, libsphere::sphere, libmaterial::{material, lambertian}};
@@ -52,4 +54,11 @@ impl scatter for Rc<material> {
             material::Dielectric(d) => d.scatter(r_in, rec, attenuation, scattered),
         }
     }
+}
+
+#[macro_export]
+macro_rules! sphere {
+    ($center:expr, $radius:expr, $material:expr) => {
+        hittable::Sphere(sphere::from($center, $radius, $material))
+    };
 }
