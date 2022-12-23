@@ -1,6 +1,7 @@
 use std::ops::{Index, AddAssign, MulAssign, Neg, DivAssign, Add, Sub, Mul, Div};
 use rand::Rng;
 
+
 #[derive(Debug, Clone, Copy)]
 pub struct vec3 {
     pub x: f64,
@@ -68,6 +69,7 @@ impl vec3 {
         vec3 { x: x1, y: y1, z: z1 }
     }
 
+    #[inline(always)]
     pub fn length_squared(self) -> f64 {
         self.x*self.x + self.y*self.y + self.z*self.z
     }
@@ -178,10 +180,11 @@ impl Div<f64> for vec3 {
     }
 }
 
+#[inline]
 pub fn dot(vector: vec3, other: vec3) -> f64 {
-        vector[0] * other[0] +
-        vector[1] * other[1] +
-        vector[2] * other[2]
+        vector.x * other.x +
+        vector.y * other.y +
+        vector.z * other.z
 }
 
 pub fn cross(vector: vec3, other: vec3) -> vec3 {

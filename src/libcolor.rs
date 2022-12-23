@@ -6,7 +6,7 @@ pub fn clamp(x: f64, min: f64, max: f64) -> f64 {
     x
 }
 
-pub fn write_color(pixel_color: color, samples_per_pixel: i32) {
+pub fn write_color(pixel_color: color, samples_per_pixel: i32) -> String {
     let mut r = pixel_color.x;
     let mut g = pixel_color.y;
     let mut b = pixel_color.z;
@@ -18,10 +18,10 @@ pub fn write_color(pixel_color: color, samples_per_pixel: i32) {
     b = (scale * b).sqrt();
     
     // Write translated [0, 255] value of each color component
-    println!(
+    format!(
         "{} {} {}",
         (256. * clamp(r, 0., 0.999)) as i32,
         (256. * clamp(g, 0., 0.999)) as i32,
         (256. * clamp(b, 0., 0.999)) as i32
-    );
+    )
 }

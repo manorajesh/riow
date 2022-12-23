@@ -7,9 +7,11 @@ edition = "2021"
 
 [dependencies]
 rand = "0.8.5"
-mimalloc = { version = "0.1.17", default-features = false }
+mimalloc = { version = "*", default-features = false }
+rayon = "*"
 
 [profile.release]
 lto = "fat"
 codegen-units = 1
 panic = "abort"
+debug = 1

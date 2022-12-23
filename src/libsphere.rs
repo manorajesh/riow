@@ -1,21 +1,23 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::{libvec::*, libray::ray, libhittable::hit_record, libmaterial::material};
 
 pub struct sphere {
     pub center: point3,
     pub radius: f64,
-    pub m: Rc<material>,
+    pub m: Arc<material>,
 }
 
 impl sphere {
-    pub fn from(center: point3, radius: f64, m: &Rc<material>) -> sphere {
+    pub fn from(center: point3, radius: f64, m: &Arc<material>) -> sphere {
         sphere {
             center,
             radius,
             m: m.clone()
         }
     }
+
+    #[inline(always)]
     pub fn hit(&self, r: ray, t_min: f64, t_max: f64, rec: &mut hit_record) -> bool {
         let oc = r.origin - self.center;
         let a = r.direction.length_squared();

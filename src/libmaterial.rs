@@ -94,28 +94,28 @@ fn reflectance(cosine: f64, ref_idx: f64) -> f64 {
 #[macro_export]
 macro_rules! lambertian {
     ($x:expr, $y:expr, $z:expr) => {
-        std::rc::Rc::new(material::Lambertian(lambertian::from(color::from($x, $y, $z))))
+        std::sync::Arc::new(material::Lambertian(lambertian::from(color::from($x, $y, $z))))
     };
 
     ($color:expr) => {
-        std::rc::Rc::new(material::Lambertian(lambertian::from($color)))
+        std::sync::Arc::new(material::Lambertian(lambertian::from($color)))
     };
 }
 
 #[macro_export]
 macro_rules! metal {
     ($x:expr, $y:expr, $z:expr, $roughness:expr) => {
-        std::rc::Rc::new(material::Metal(metal::from(color::from($x, $y, $z), $roughness)))
+        std::sync::Arc::new(material::Metal(metal::from(color::from($x, $y, $z), $roughness)))
     };
 
     ($color:expr, $roughness:expr) => {
-        std::rc::Rc::new(material::Metal(metal::from($color, $roughness)))
+        std::sync::Arc::new(material::Metal(metal::from($color, $roughness)))
     };
 }
 
 #[macro_export]
 macro_rules! dielectric {
     ($ior:expr) => {
-        std::rc::Rc::new(material::Dielectric(dielectric::from($ior)))
+        std::sync::Arc::new(material::Dielectric(dielectric::from($ior)))
     };
 }

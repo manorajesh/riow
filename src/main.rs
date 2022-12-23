@@ -23,6 +23,8 @@ use libhittable::scatter;
 use libmaterial::{material, lambertian, metal, dielectric};
 
 use std::io::{stderr, Write};
+use rayon::prelude::*;
+use std::sync::{Arc, Mutex};
 
 fn random_scene() -> hittable_list {
     let mut world = hittable_list::new();
@@ -117,12 +119,14 @@ fn main() {
 
     // Render
     let start_time = std::time::SystemTime::now();
-
+    let num_pixels = image_height * image_width;
+    let pixels: Arc<Mutex<Vec<(String, i32, i32)>>> = Arc::new(Mutex::new(Vec::with_capacity(num_pixels as usize)));
+    
     print!("P3\n{} {}\n255\n", image_width, image_height);
-    for j in (0..image_height).rev() {
-        eprint!("\rScanlines remaining: {} ", j);
+    (0..image_height).into_par_iter().for_each(|j| {
+        eprint!("\r{} pixels done of {} ", pixels.lock().unwrap().len(), num_pixels);
         stderr().flush().unwrap();
-        for i in 0..image_width {
+        (0..image_width).into_par_iter().for_each(|i| {
             let mut pixel_color = color::new();
             for _ in 0..samples_per_pixel {
                 let u = (i as f64 + rand::random::<f64>())/(image_width-1) as f64;
@@ -130,9 +134,26 @@ fn main() {
                 let r = cam.get_ray(u, v);
                 pixel_color += ray_color(r, &world, max_depth);
             }
-            write_color(pixel_color, samples_per_pixel);
-        }
-    }
+            pixels.lock().unwrap().push((write_color(pixel_color, samples_per_pixel), j, i));
+        });
+    });
+    eprint!("\r{} pixels done of {} ", pixels.lock().unwrap().len(), num_pixels);
+    stderr().flush().unwrap();
 
-    eprint!("\nDone! - {} seconds\n", start_time.elapsed().unwrap().as_secs());
+    eprint!("\nSorting pixels... ");
+    let mut pixels_vec = pixels.lock().unwrap();
+    pixels_vec.sort_by(|a, b| {
+        if a.1 == b.1 {
+            b.2.cmp(&a.2)
+        } else {
+            a.1.cmp(&b.1)
+        }
+    });
+
+    eprint!("\nReversing pixels and printing... ");
+    pixels_vec.reverse();
+    for pixel in pixels_vec.clone() {
+        println!("{}", pixel.0);
+    }
+    eprint!("\nDone! in {} seconds\n", start_time.elapsed().unwrap().as_secs());
 }
