@@ -96,9 +96,9 @@ fn ray_color(r: ray, world: &hittable_list, depth: i32) -> color {
 fn main() {
     // Image
     let aspect_ratio = 3./2.;
-    let image_width: i32 = 400;
+    let image_width: i32 = 1200;
     let image_height: i32 = (image_width as f64/ aspect_ratio) as i32;
-    let samples_per_pixel = 10;
+    let samples_per_pixel = 500;
     let max_depth = 50;
 
     // World
