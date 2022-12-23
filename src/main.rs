@@ -1,5 +1,7 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 mod libvec;
 mod libcolor;
@@ -34,12 +36,12 @@ fn random_scene() -> hittable_list {
             let center = point3::from(a as f64 + 0.9*rand::random::<f64>(), 0.2, b as f64 + 0.9*rand::random::<f64>());
 
             if (center - point3::from(4., 0.2, 0.)).length() > 0.9 {
-                if choose_mat < 0.8 {
+                if choose_mat < 0.4 {
                     // diffuse
                     let albedo = color::random() * color::random();
                     let sphere_material = lambertian!(albedo);
                     world.add(sphere!(center, 0.2, &sphere_material));
-                } else if choose_mat < 0.95 {
+                } else if choose_mat < 0.6 {
                     // metal
                     let albedo = color::random_range(0.5, 1.);
                     let roughness = rand::random::<f64>();
@@ -81,11 +83,11 @@ fn ray_color(r: ray, world: &hittable_list, depth: i32) -> color {
         }
         return color::new();
 
-
         // // let target = rec.p + rec.normal + random_in_unit_sphere(); // diffuse scattering
         // // let target = rec.p + rec.normal + random_unit_vector(); // lambertian scattering
         // let target = rec.p + random_in_hemisphere(rec.normal); // hemispherical scattering
         // 0.5 * ray_color(ray::from(rec.p, target-rec.p), world, depth-1)
+        
     } else {
         let unit_direction = unit_vector(r.direction);
         let t = 0.5*(unit_direction.y + 1.);
@@ -96,9 +98,9 @@ fn ray_color(r: ray, world: &hittable_list, depth: i32) -> color {
 fn main() {
     // Image
     let aspect_ratio = 3./2.;
-    let image_width: i32 = 1200;
+    let image_width: i32 = 400;
     let image_height: i32 = (image_width as f64/ aspect_ratio) as i32;
-    let samples_per_pixel = 500;
+    let samples_per_pixel = 100;
     let max_depth = 50;
 
     // World
