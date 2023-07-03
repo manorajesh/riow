@@ -8,4 +8,4 @@ I also encountered problems with porting C++ **abstract classes** and **shared p
 <br><br>
 I learned a lot and got the ray tracer to work (a rust tracer if you will), so this would be one of my more successful projects to date.
 <br>
-![image of finished render](https://github.com/manorajesh/riow/blob/master/final.png)
+![image of finished render](https://github.com/manorajesh/riow/blob/master/images/final.png)
