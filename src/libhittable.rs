@@ -1,8 +1,11 @@
-
-
 use std::sync::Arc;
 
-use crate::{libvec::{point3, vec3, dot, color}, libray::ray, libsphere::sphere, libmaterial::{material, lambertian}};
+use crate::{
+    libmaterial::{lambertian, material},
+    libray::ray,
+    libsphere::sphere,
+    libvec::{color, dot, point3, vec3},
+};
 
 pub enum hittable {
     Sphere(sphere),
@@ -22,13 +25,17 @@ pub struct hit_record {
     pub normal: vec3,
     pub t: f64,
     pub mat: Arc<material>,
-    pub front_face: bool
+    pub front_face: bool,
 }
 
 impl hit_record {
     pub fn set_face_normal(&mut self, r: ray, outward_normal: vec3) {
         self.front_face = dot(r.direction, outward_normal) < 0.;
-        self.normal = if self.front_face { outward_normal } else { -outward_normal };
+        self.normal = if self.front_face {
+            outward_normal
+        } else {
+            -outward_normal
+        };
     }
 
     pub fn new() -> hit_record {
@@ -37,17 +44,29 @@ impl hit_record {
             normal: vec3::new(),
             t: 0.,
             mat: Arc::new(material::Lambertian(lambertian::from(color::new()))),
-            front_face: false
+            front_face: false,
         }
     }
 }
 
 pub trait scatter {
-    fn scatter(&self, r_in: &ray, rec: &hit_record, attenuation: &mut color, scattered: &mut ray) -> bool;
+    fn scatter(
+        &self,
+        r_in: &ray,
+        rec: &hit_record,
+        attenuation: &mut color,
+        scattered: &mut ray,
+    ) -> bool;
 }
 
 impl scatter for Arc<material> {
-    fn scatter(&self, r_in: &ray, rec: &hit_record, attenuation: &mut color, scattered: &mut ray) -> bool {
+    fn scatter(
+        &self,
+        r_in: &ray,
+        rec: &hit_record,
+        attenuation: &mut color,
+        scattered: &mut ray,
+    ) -> bool {
         match self.as_ref() {
             material::Lambertian(l) => l.scatter(r_in, rec, attenuation, scattered),
             material::Metal(m) => m.scatter(r_in, rec, attenuation, scattered),

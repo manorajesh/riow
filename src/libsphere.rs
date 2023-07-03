@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{libvec::*, libray::ray, libhittable::hit_record, libmaterial::material};
+use crate::{libhittable::hit_record, libmaterial::material, libray::ray, libvec::*};
 
 pub struct sphere {
     pub center: point3,
@@ -13,7 +13,7 @@ impl sphere {
         sphere {
             center,
             radius,
-            m: m.clone()
+            m: m.clone(),
         }
     }
 
@@ -22,9 +22,9 @@ impl sphere {
         let oc = r.origin - self.center;
         let a = r.direction.length_squared();
         let half_b = dot(oc, r.direction);
-        let c = oc.length_squared() - self.radius*self.radius;
+        let c = oc.length_squared() - self.radius * self.radius;
 
-        let discriminant = half_b*half_b - a*c;
+        let discriminant = half_b * half_b - a * c;
         if discriminant < 0. {
             false
         } else {
@@ -43,8 +43,8 @@ impl sphere {
                     let outward_normal = (rec.p - self.center) / self.radius;
                     rec.set_face_normal(r, outward_normal);
                     rec.mat = self.m.clone();
-    
-                    true 
+
+                    true
                 }
             } else {
                 rec.t = root;

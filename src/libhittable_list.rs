@@ -1,13 +1,16 @@
-use crate::{libhittable::{hittable, hit_record}, libray::ray};
+use crate::{
+    libhittable::{hit_record, hittable},
+    libray::ray,
+};
 
 pub struct hittable_list {
-    pub objects: Vec<hittable>
+    pub objects: Vec<hittable>,
 }
 
 impl hittable_list {
     pub fn new() -> hittable_list {
         hittable_list {
-            objects: Vec::new()
+            objects: Vec::new(),
         }
     }
 
@@ -19,7 +22,7 @@ impl hittable_list {
         self.objects.push(object);
     }
 
-    pub fn hit (&self, r: ray, t_min: f64, t_max: f64, rec: &mut hit_record) -> bool {
+    pub fn hit(&self, r: ray, t_min: f64, t_max: f64, rec: &mut hit_record) -> bool {
         let temp_rec = hit_record::new();
         let mut hit_anything = false;
         let mut closest_so_far = t_max;

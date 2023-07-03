@@ -1,8 +1,12 @@
 use crate::libvec::color;
 
 pub fn clamp(x: f64, min: f64, max: f64) -> f64 {
-    if x < min { return min; }
-    if x > max { return max; }
+    if x < min {
+        return min;
+    }
+    if x > max {
+        return max;
+    }
     x
 }
 
@@ -16,7 +20,7 @@ pub fn write_color(pixel_color: color, samples_per_pixel: i32) -> String {
     r = (scale * r).sqrt();
     g = (scale * g).sqrt();
     b = (scale * b).sqrt();
-    
+
     // Write translated [0, 255] value of each color component
     format!(
         "{} {} {}",
