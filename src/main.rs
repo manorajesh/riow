@@ -3,24 +3,21 @@ use wgpu::{ util::DeviceExt, PipelineCompilationOptions };
 use bytemuck;
 
 async fn run() {
-    // Initialize the WGPU instance and adapter
+    /* ---------------- Initialize the WGPU instance and adapter ---------------- */
     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
     let adapter = instance.request_adapter(&Default::default()).await.unwrap();
     let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor::default()).await.unwrap();
-    // TODO: re-enable timestamp queries
-    let query_set = None;
 
-    // Shader compilation
+    /* --------------------------- Shader compilation --------------------------- */
     let start_instant = Instant::now();
     let cs_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: None,
-        //source: wgpu::ShaderSource::SpirV(bytes_to_u32(include_bytes!("alu.spv")).into()),
         source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
     });
     println!("shader compilation {:?}", start_instant.elapsed());
 
-    // Create buffers and bind groups
-    let input_v = (0..25600).map(|i| i as f32).collect::<Vec<_>>();
+    /* --------------------- Create buffers and bind groups --------------------- */
+    let input_v = (0..63).map(|i| i as f32).collect::<Vec<_>>();
     let input: &[u8] = bytemuck::cast_slice(&input_v);
     let input_buf = device.create_buffer_init(
         &(wgpu::util::BufferInitDescriptor {
@@ -39,24 +36,8 @@ async fn run() {
             mapped_at_creation: false,
         })
     );
-    let query_buf = device.create_buffer(
-        &(wgpu::BufferDescriptor {
-            label: None,
-            size: 16,
-            usage: wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::QUERY_RESOLVE,
-            mapped_at_creation: false,
-        })
-    );
-    let query_staging_buf = device.create_buffer(
-        &(wgpu::BufferDescriptor {
-            label: None,
-            size: 16,
-            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        })
-    );
 
-    // Create bind group layout, pipeline layout, and compute pipeline
+    /* ----- Create bind group layout, pipeline layout, and compute pipeline ---- */
     let bind_group_layout = device.create_bind_group_layout(
         &(wgpu::BindGroupLayoutDescriptor {
             label: None,
@@ -105,7 +86,7 @@ async fn run() {
         })
     );
 
-    // Command encoder and compute pass
+    /* -------------------- Command encoder and compute pass -------------------- */
     let mut encoder = device.create_command_encoder(&Default::default());
     {
         let mut cpass = encoder.begin_compute_pass(&Default::default());
@@ -114,23 +95,18 @@ async fn run() {
         cpass.dispatch_workgroups(input_v.len() as u32, 1, 1);
     }
     encoder.copy_buffer_to_buffer(&input_buf, 0, &output_buf, 0, input.len() as u64);
-    if let Some(query_set) = &query_set {
-        encoder.resolve_query_set(query_set, 0..2, &query_buf, 0);
-    }
-    encoder.copy_buffer_to_buffer(&query_buf, 0, &query_staging_buf, 0, 16);
     queue.submit(Some(encoder.finish()));
 
-    // Wait for the GPU to finish processing
+    /* ------------------ Wait for the GPU to finish processing ----------------- */
     let buf_slice = output_buf.slice(..);
     let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
     buf_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
-    let query_slice = query_staging_buf.slice(..);
-    // Assume that both buffers become available at the same time. A more careful
-    // approach would be to wait for both notifications to be sent.
-    query_slice.map_async(wgpu::MapMode::Read, |_| ());
-    println!("pre-poll {:?}", std::time::Instant::now());
+
+    let start_poll = std::time::Instant::now();
     device.poll(wgpu::PollType::Wait).expect("device.poll failed");
-    println!("post-poll {:?}", std::time::Instant::now());
+    println!("device.poll took {:?}", start_poll.elapsed());
+
+    // receive the data
     if let Some(Ok(())) = receiver.receive().await {
         let data_raw = &*buf_slice.get_mapped_range();
         let data: &[f32] = bytemuck::cast_slice(data_raw);
