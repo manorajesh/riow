@@ -1,185 +1,143 @@
-#![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
-#[global_allocator]
-static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+use std::time::Instant;
+use wgpu::{ util::DeviceExt, PipelineCompilationOptions };
+use bytemuck;
 
-mod libcamera;
-mod libcolor;
-mod libhittable;
-mod libhittable_list;
-mod libmaterial;
-mod libray;
-mod libsphere;
-mod libvec;
+async fn run() {
+    // Initialize the WGPU instance and adapter
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance.request_adapter(&Default::default()).await.unwrap();
+    let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor::default()).await.unwrap();
+    // TODO: re-enable timestamp queries
+    let query_set = None;
 
-use libcamera::camera;
-use libcolor::write_color;
-use libhittable::scatter;
-use libhittable::{hit_record, hittable};
-use libhittable_list::hittable_list;
-use libmaterial::{dielectric, lambertian, material, metal};
-use libray::*;
-use libsphere::sphere;
-use libvec::*;
+    // Shader compilation
+    let start_instant = Instant::now();
+    let cs_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: None,
+        //source: wgpu::ShaderSource::SpirV(bytes_to_u32(include_bytes!("alu.spv")).into()),
+        source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
+    });
+    println!("shader compilation {:?}", start_instant.elapsed());
 
-use rayon::prelude::*;
-use std::io::{stderr, Write};
-use std::sync::{Arc, Mutex};
+    // Create buffers and bind groups
+    let input_v = (0..25600).map(|i| i as f32).collect::<Vec<_>>();
+    let input: &[u8] = bytemuck::cast_slice(&input_v);
+    let input_buf = device.create_buffer_init(
+        &(wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: input,
+            usage: wgpu::BufferUsages::STORAGE |
+            wgpu::BufferUsages::COPY_DST |
+            wgpu::BufferUsages::COPY_SRC,
+        })
+    );
+    let output_buf = device.create_buffer(
+        &(wgpu::BufferDescriptor {
+            label: None,
+            size: input.len() as u64,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        })
+    );
+    let query_buf = device.create_buffer(
+        &(wgpu::BufferDescriptor {
+            label: None,
+            size: 16,
+            usage: wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::QUERY_RESOLVE,
+            mapped_at_creation: false,
+        })
+    );
+    let query_staging_buf = device.create_buffer(
+        &(wgpu::BufferDescriptor {
+            label: None,
+            size: 16,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        })
+    );
 
-fn random_scene() -> hittable_list {
-    let mut world = hittable_list::new();
+    // Create bind group layout, pipeline layout, and compute pipeline
+    let bind_group_layout = device.create_bind_group_layout(
+        &(wgpu::BindGroupLayoutDescriptor {
+            label: None,
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: false },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+            ],
+        })
+    );
+    let compute_pipeline_layout = device.create_pipeline_layout(
+        &(wgpu::PipelineLayoutDescriptor {
+            label: None,
+            bind_group_layouts: &[&bind_group_layout],
+            push_constant_ranges: &[],
+        })
+    );
+    let pipeline = device.create_compute_pipeline(
+        &(wgpu::ComputePipelineDescriptor {
+            label: None,
+            layout: Some(&compute_pipeline_layout),
+            module: &cs_module,
+            entry_point: Some("main"),
+            cache: None,
+            compilation_options: PipelineCompilationOptions::default(),
+        })
+    );
 
-    let ground_material = lambertian!(0.5, 0.5, 0.5);
-    world.add(sphere!(0., -1000., 0., 1000., &ground_material));
+    let bind_group = device.create_bind_group(
+        &(wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: input_buf.as_entire_binding(),
+                },
+            ],
+        })
+    );
 
-    for a in -11..11 {
-        for b in -11..11 {
-            let choose_mat = rand::random::<f64>();
-            let center = point3::from(
-                a as f64 + 0.9 * rand::random::<f64>(),
-                0.2,
-                b as f64 + 0.9 * rand::random::<f64>(),
-            );
-
-            if (center - point3::from(4., 0.2, 0.)).length() > 0.9 {
-                if choose_mat < 0.4 {
-                    // diffuse
-                    let albedo = color::random() * color::random();
-                    let sphere_material = lambertian!(albedo);
-                    world.add(sphere!(center, 0.2, &sphere_material));
-                } else if choose_mat < 0.6 {
-                    // metal
-                    let albedo = color::random_range(0.5, 1.);
-                    let roughness = rand::random::<f64>();
-                    let sphere_material = metal!(albedo, roughness);
-                    world.add(sphere!(center, 0.2, &sphere_material));
-                } else {
-                    // glass
-                    let sphere_material = dielectric!(1.5);
-                    world.add(sphere!(center, 0.2, &sphere_material));
-                }
-            }
-        }
+    // Command encoder and compute pass
+    let mut encoder = device.create_command_encoder(&Default::default());
+    {
+        let mut cpass = encoder.begin_compute_pass(&Default::default());
+        cpass.set_pipeline(&pipeline);
+        cpass.set_bind_group(0, &bind_group, &[]);
+        cpass.dispatch_workgroups(input_v.len() as u32, 1, 1);
     }
-
-    let material1 = dielectric!(1.5);
-    world.add(sphere!(point3::from(0., 1., 0.), 1., &material1));
-
-    let material2 = lambertian!(0.4, 0.2, 0.1);
-    world.add(sphere!(point3::from(-4., 1., 0.), 1., &material2));
-
-    let material3 = metal!(color::from(0.7, 0.6, 0.5), 0.);
-    world.add(sphere!(point3::from(4., 1., 0.), 1., &material3));
-
-    world
-}
-
-fn ray_color(r: ray, world: &hittable_list, depth: i32) -> color {
-    let mut rec = hit_record::new();
-
-    if depth <= 0 {
-        return color::new();
+    encoder.copy_buffer_to_buffer(&input_buf, 0, &output_buf, 0, input.len() as u64);
+    if let Some(query_set) = &query_set {
+        encoder.resolve_query_set(query_set, 0..2, &query_buf, 0);
     }
+    encoder.copy_buffer_to_buffer(&query_buf, 0, &query_staging_buf, 0, 16);
+    queue.submit(Some(encoder.finish()));
 
-    if world.hit(r, 0.001, f64::INFINITY, &mut rec) {
-        let mut scattered = ray::new();
-        let mut attenuation = color::new();
-        if rec.mat.scatter(&r, &rec, &mut attenuation, &mut scattered) {
-            return attenuation * ray_color(scattered, world, depth - 1);
-        }
-        color::new()
-
-        // // let target = rec.p + rec.normal + random_in_unit_sphere(); // diffuse scattering
-        // // let target = rec.p + rec.normal + random_unit_vector(); // lambertian scattering
-        // let target = rec.p + random_in_hemisphere(rec.normal); // hemispherical scattering
-        // 0.5 * ray_color(ray::from(rec.p, target-rec.p), world, depth-1)
-    } else {
-        let unit_direction = unit_vector(r.direction);
-        let t = 0.5 * (unit_direction.y + 1.);
-        (1. - t) * color::from(1., 1., 1.) + t * color::from(0.5, 0.7, 1.)
+    // Wait for the GPU to finish processing
+    let buf_slice = output_buf.slice(..);
+    let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
+    buf_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
+    let query_slice = query_staging_buf.slice(..);
+    // Assume that both buffers become available at the same time. A more careful
+    // approach would be to wait for both notifications to be sent.
+    query_slice.map_async(wgpu::MapMode::Read, |_| ());
+    println!("pre-poll {:?}", std::time::Instant::now());
+    device.poll(wgpu::PollType::Wait).expect("device.poll failed");
+    println!("post-poll {:?}", std::time::Instant::now());
+    if let Some(Ok(())) = receiver.receive().await {
+        let data_raw = &*buf_slice.get_mapped_range();
+        let data: &[f32] = bytemuck::cast_slice(data_raw);
+        println!("data: {:?}", data);
     }
 }
 
 fn main() {
-    // Image
-    let aspect_ratio = 3. / 2.;
-    let image_width: i32 = 1200;
-    let image_height: i32 = (image_width as f64 / aspect_ratio) as i32;
-    let samples_per_pixel = 500;
-    let max_depth = 50;
-
-    // World
-    let world = random_scene();
-
-    // Camera
-    let lookfrom = point3::from(13., 2., 3.);
-    let lookat = point3::from(0., 0., 0.);
-    let vup = vec3::from(0., 1., 0.);
-    let dist_to_focus = 10.;
-    let aperture = 0.1;
-
-    let cam = camera::from(
-        lookfrom,
-        lookat,
-        vup,
-        20.,
-        aspect_ratio,
-        aperture,
-        dist_to_focus,
-    );
-
-    // Render
-    let start_time = std::time::SystemTime::now();
-    let num_pixels = image_height * image_width;
-    let pixels: Arc<Mutex<Vec<(String, i32, i32)>>> =
-        Arc::new(Mutex::new(Vec::with_capacity(num_pixels as usize)));
-
-    print!("P3\n{} {}\n255\n", image_width, image_height);
-    (0..image_height).into_par_iter().for_each(|j| {
-        eprint!(
-            "\r{} pixels done of {} ",
-            pixels.lock().unwrap().len(),
-            num_pixels
-        );
-        stderr().flush().unwrap();
-        (0..image_width).into_par_iter().for_each(|i| {
-            let mut pixel_color = color::new();
-            for _ in 0..samples_per_pixel {
-                let u = (i as f64 + rand::random::<f64>()) / (image_width - 1) as f64;
-                let v = (j as f64 + rand::random::<f64>()) / (image_height - 1) as f64;
-                let r = cam.get_ray(u, v);
-                pixel_color += ray_color(r, &world, max_depth);
-            }
-            pixels
-                .lock()
-                .unwrap()
-                .push((write_color(pixel_color, samples_per_pixel), j, i));
-        });
-    });
-    eprint!(
-        "\r{} pixels done of {} ",
-        pixels.lock().unwrap().len(),
-        num_pixels
-    );
-    stderr().flush().unwrap();
-
-    eprint!("\nSorting pixels... ");
-    let mut pixels_vec = pixels.lock().unwrap();
-    pixels_vec.sort_by(|a, b| {
-        if a.1 == b.1 {
-            b.2.cmp(&a.2)
-        } else {
-            a.1.cmp(&b.1)
-        }
-    });
-
-    eprint!("\nReversing pixels and printing... ");
-    pixels_vec.reverse();
-    for pixel in pixels_vec.clone() {
-        println!("{}", pixel.0);
-    }
-    eprint!(
-        "\nDone! in {} seconds\n",
-        start_time.elapsed().unwrap().as_secs()
-    );
+    pollster::block_on(run());
 }
